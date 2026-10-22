@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ほけんしつ通信 - 感染症発生状況（高千穂町・職員連絡用）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #fcf8f2; /* あたたかみのあるナチュラルアイボリー */
+            letter-spacing: 0.015em;
+            color: #4a403a;
+        }
+
+        .font-hand {
+            font-family: 'Kiwi Maru', 'Noto Sans JP', serif;
+        }
+
+        /* 数字専用の視認性重視フォント設定 */
+        .font-num {
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 850px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 330px;
+            max-height: 400px;
+        }
+
+        /* やさしいスクロールバー */
+        .sheet-scroll::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+        .sheet-scroll::-webkit-scrollbar-track {
+            background: #f4efe6;
+            border-radius: 6px;
+        }
+        .sheet-scroll::-webkit-scrollbar-thumb {
+            background: #d8cebe;
+            border-radius: 6px;
+        }
+        .sheet-scroll::-webkit-scrollbar-thumb:hover {
+            background: #bfae99;
+        }
+
+        /* ふわっとしたソフトシャドウ */
+        .warm-shadow {
+            box-shadow: 0 10px 25px -5px rgba(210, 180, 140, 0.15), 0 8px 10px -6px rgba(210, 180, 140, 0.1);
+        }
+        .warm-card {
+            background: #ffffff;
+            border: 2px solid #f3eae0;
+            border-radius: 1.75rem;
+        }
+    </style>
+</head>
+<body class="text-[#4a403a] font-sans antialiased min-h-screen flex flex-col selection:bg-amber-200/60 pb-12">
+
+    <header class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white shadow-md rounded-b-[2.5rem] border-b-4 border-emerald-700/30">
+        <div class="max-w-7xl mx-auto px-6 py-7 sm:px-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="bg-amber-100 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full shadow-xs flex items-center gap-1.5 font-hand border border-amber-200">
+                        <span>🌱</span> 保健室より（10月22日 最新集計）
+                    </span>
+                    <span class="bg-white/20 text-emerald-50 text-xs font-medium px-3.5 py-1 rounded-full backdrop-blur-xs">
+                        前週比較（10月15日 対比）
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-wide text-white font-hand flex items-center gap-2">
+                    感染症発生状況ダッシュボード <span class="text-lg opacity-90 font-normal">（職員連絡用）</span>
+                </h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 flex-grow w-full space-y-7">
+
+        <!-- 高千穂町エリア（安心感を伝えるぬくもりカード） -->
+        <section aria-labelledby="takachiho-heading" class="bg-gradient-to-r from-amber-100/60 via-emerald-50/50 to-teal-50/60 border-2 border-emerald-200/80 rounded-[2rem] p-6 warm-shadow bg-white relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-emerald-100/50 text-9xl pointer-events-none font-hand">🌿</div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+                <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-lg mb-1">
+                        <span>🏡</span> 地域の様子
+                    </div>
+                    <h2 id="takachiho-heading" class="text-2xl font-bold text-slate-800 font-hand">高千穂町の現在の発生状況</h2>
+                    <p class="text-xs text-slate-500">10月22日最新集計（前週10月15日との比較）</p>
+                </div>
+
+                <div class="flex items-center gap-4 shrink-0">
+                    <div class="bg-white/90 border-2 border-amber-300 rounded-2xl p-4 min-w-[200px] sm:min-w-[240px] text-center shadow-xs">
+                        <div class="text-xs font-bold text-amber-800 mb-1 flex items-center justify-center gap-1">
+                            <span>🏫</span> 町内 出席停止・疾患登録者数
+                        </div>
+                        <div class="text-4xl sm:text-5xl font-black text-rose-600 font-num leading-none my-1.5">7 <span class="text-sm font-normal text-slate-500 font-sans">名</span></div>
+                        <div class="text-xs text-rose-700 font-bold font-num">前週 4名（インフル4名）より 3名増加（インフル7名・学級閉鎖1）</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 県内の主な警戒ポイント -->
+        <section aria-labelledby="alerts-heading">
+            <div class="flex items-center justify-between mb-3.5 px-1">
+                <h2 id="alerts-heading" class="text-lg font-bold text-slate-800 flex items-center gap-2 font-hand">
+                    <span class="p-2 bg-amber-100 text-amber-800 rounded-2xl text-base shadow-2xs">📢</span> 宮崎県内で流行している感染症（10/22最新 vs 10/15比較）
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- インフルエンザ -->
+                <div class="bg-gradient-to-br from-rose-50/90 to-orange-50/50 border-2 border-rose-200/80 p-5 rounded-[1.75rem] warm-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-bold text-rose-800 bg-rose-200/70 px-3.5 py-1 rounded-full border border-rose-300/50">インフルエンザ</span>
+                        <div class="text-right">
+                            <div class="flex items-baseline gap-1 bg-white px-4 py-1.5 rounded-2xl border border-rose-200 shadow-2xs">
+                                <span class="text-3xl sm:text-4xl font-black text-rose-600 font-num leading-none">135</span>
+                                <span class="text-xs font-bold text-slate-500">名</span>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-600 block mt-1.5 font-num">前週 175名 (▼ -40名 減少)</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-600 bg-white/90 p-3 rounded-2xl border border-rose-100/90 mt-2 leading-relaxed">
+                        <strong class="text-slate-800 block mb-0.5">📍 10/22の主な発生地：</strong>宮崎(37)、都城(27)、小林(21)、県立学校(20)、小林(21)、延岡(10)、日南(9)、高千穂(7)、川南(4)、高鍋(2)、串間(1)、えびの(1)等
+                    </div>
+                </div>
+
+                <!-- 新型コロナ / 感染性胃腸炎 -->
+                <div class="bg-gradient-to-br from-teal-50/90 to-emerald-50/50 border-2 border-teal-200/80 p-5 rounded-[1.75rem] warm-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-bold text-teal-900 bg-teal-200/70 px-3.5 py-1 rounded-full border border-teal-300/50">感染性胃腸炎 / 溶連菌</span>
+                        <div class="text-right">
+                            <div class="flex items-baseline gap-1 bg-white px-3 py-1.5 rounded-2xl border border-teal-200 shadow-2xs">
+                                <span class="text-2xl sm:text-3xl font-black text-teal-700 font-num leading-none">5 / 9</span>
+                                <span class="text-xs font-bold text-slate-500">名</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500 block mt-1.5 font-num">前週 胃7(-2) / 溶12(-3)</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-600 bg-white/90 p-3 rounded-2xl border border-teal-100/90 mt-2 leading-relaxed">
+                        <strong class="text-slate-800 block mb-0.5">📍 10/22の主な発生地：</strong>【胃腸炎】宮崎(2)、日南(2)、県立学校(2) / 【溶連菌】宮崎(3)、日南(1)、三股(1)、都農(1)
+                    </div>
+                </div>
+
+                <!-- 角結膜炎 / マイコプラズマ / 水ぼうそう -->
+                <div class="bg-gradient-to-br from-amber-50/90 to-yellow-50/50 border-2 border-amber-200/80 p-5 rounded-[1.75rem] warm-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-bold text-amber-900 bg-amber-200/70 px-3.5 py-1 rounded-full border border-amber-300/50">角結膜炎 / マイコ / コロナ</span>
+                        <div class="text-right">
+                            <div class="flex items-baseline gap-1 bg-white px-3 py-1.5 rounded-2xl border border-amber-200 shadow-2xs">
+                                <span class="text-2xl sm:text-3xl font-black text-amber-700 font-num leading-none">5 / 6 / 2</span>
+                                <span class="text-xs font-bold text-slate-500">名</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500 block mt-1.5 font-num">前週 角10(-5) / マ9(-3) / コ2(±0)</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-600 bg-white/90 p-3 rounded-2xl border border-amber-100/90 mt-2 leading-relaxed">
+                        <strong class="text-slate-800 block mb-0.5">📍 10/22の主な発生地：</strong>【角結膜炎】延岡(2)、宮崎(1)、綾(1)、県立(1) / 【マイコ】日向(2)、延岡(1)、西都(1)、県立学校(1) / 【コロナ】宮崎(1)、都城(1)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- グラフセクション -->
+        <section class="warm-card p-6 warm-shadow flex flex-col justify-between">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-2 font-hand">
+                    <span class="p-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-xs">📊</span> 疾患別 報告人数の推移比較（県全体：10/22 vs 10/15）
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">青色：10月22日（最新） / 灰色：10月15日（1週間前）</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="diseaseChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 表データセクション -->
+        <section class="warm-card p-6 warm-shadow space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-amber-100 pb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 font-hand">
+                        <span class="p-1.5 bg-amber-100 text-amber-800 rounded-xl text-xs">📋</span> 市町村別 出席停止・疾患登録人数一覧
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">各セルの数値： <strong class="text-slate-600">10/22最新値 [前週差]</strong> （下段カッコ内は10/15値）</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button onclick="highlightTakachiho()" class="px-4 py-2 text-xs bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-full hover:bg-amber-200 transition-all shadow-2xs flex items-center gap-1 font-hand">
+                        <span>🔍</span> 高千穂町へ移動
+                    </button>
+                    <input type="text" id="tableSearch" placeholder="キーワード検索 (例: 高千穂町, 宮崎市)" class="px-4 py-2 text-xs border border-emerald-200 rounded-full focus:ring-2 focus:ring-emerald-400 focus:outline-none w-52 bg-emerald-50/20">
+                    <select id="regionFilter" class="px-3.5 py-2 text-xs border border-emerald-200 rounded-full focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white text-slate-700">
+                        <option value="all">すべての地域を表示</option>
+                        <option value="takachihoOnly">高千穂町・西臼杵郡周辺</option>
+                        <option value="hasData">報告がある地域のみ</option>
+                        <option value="city">市部のみ</option>
+                        <option value="town">町村部のみ</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- テーブル本体 -->
+            <div class="overflow-x-auto sheet-scroll rounded-2xl border border-amber-200/80 max-h-[580px] overflow-y-auto">
+                <table class="w-full text-left border-collapse min-w-[1050px]">
+                    <thead class="sticky top-0 z-20 text-xs">
+                        <tr class="bg-emerald-800 text-white font-bold text-center border-b border-emerald-900">
+                            <th class="p-3 border-r border-emerald-700 w-36 sticky left-0 bg-emerald-800 z-30 font-hand">地域 / 区分</th>
+                            <th class="p-3 border-r border-emerald-700 bg-rose-900/90 font-hand" colspan="2">主要 出席停止人数</th>
+                            <th class="p-3 border-r border-emerald-700 bg-emerald-900/90 font-hand" colspan="6">その他 疾患別 報告数（人）</th>
+                            <th class="p-3 bg-slate-700 font-hand" colspan="3">学級・学年・学校閉鎖</th>
+                        </tr>
+                        <tr class="bg-emerald-50 text-emerald-900 font-bold text-center border-b border-emerald-200">
+                            <th class="p-2.5 border-r border-emerald-200 sticky left-0 bg-emerald-50 z-30">名称</th>
+                            <th class="p-2.5 border-r border-emerald-200 bg-rose-100/80 text-rose-900 w-24">インフル</th>
+                            <th class="p-2.5 border-r border-emerald-200 bg-amber-100/80 text-amber-900 w-22">コロナ</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-22">胃腸炎</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-22">溶連菌</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-22">水ぼうそう</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-22">マイコ</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-24 bg-teal-100/80 text-teal-900">角結膜炎</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-22">その他</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-20">学級</th>
+                            <th class="p-2.5 border-r border-emerald-200 w-20">学年</th>
+                            <th class="p-2.5 w-20">学校</th>
+                        </tr>
+                    </thead>
+                    <tbody id="regionalTableBody" class="divide-y divide-amber-100/80 bg-white">
+                    </tbody>
+                </table>
+            </div>
+            <div id="noDataNotice" class="hidden text-center py-8 text-xs text-slate-400 font-hand">
+                該当するデータが見つかりませんでした ☘️
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // 10月22日（最新：1枚目画像）および10月15日（前週：2枚目画像）の数値データ完全準拠
+        const fullRegionalData = [
+            { name: "宮崎県 (全体)", isTotal: true,
+              curr: { flu: 135, covid: 2, gastro: 5, strep: 9, pox: 1, myco: 6, eye: 5, other: 7, cClass: 2, cGrade: 0, cSchool: 0 },
+              prev: { flu: 175, covid: 2, gastro: 7, strep: 12, pox: 4, myco: 9, eye: 10, other: 7, cClass: 0, cGrade: 0, cSchool: 1 } },
+            
+            { name: "高千穂町", type: "town", isFocus: true,
+              curr: { flu: 7, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 1, cGrade: 0, cSchool: 0 },
+              prev: { flu: 4, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "日之影町", type: "town", isNeighbor: true,
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "五ヶ瀬町", type: "town", isNeighbor: true,
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "延岡市", type: "city", isNeighbor: true,
+              curr: { flu: 10, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 1, eye: 2, other: 1, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 53, covid: 0, gastro: 1, strep: 1, pox: 1, myco: 0, eye: 6, other: 4, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "宮崎市", type: "city",
+              curr: { flu: 37, covid: 1, gastro: 2, strep: 3, pox: 0, myco: 0, eye: 1, other: 1, cClass: 1, cGrade: 0, cSchool: 0 },
+              prev: { flu: 55, covid: 1, gastro: 3, strep: 4, pox: 0, myco: 9, eye: 3, other: 3, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "都城市", type: "city",
+              curr: { flu: 27, covid: 1, gastro: 0, strep: 2, pox: 0, myco: 0, eye: 0, other: 3, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 38, covid: 0, gastro: 1, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "日南市", type: "city",
+              curr: { flu: 9, covid: 0, gastro: 2, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 2, covid: 0, gastro: 0, strep: 1, pox: 0, myco: 2, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "小林市", type: "city",
+              curr: { flu: 21, covid: 0, gastro: 1, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 1, covid: 0, gastro: 1, strep: 2, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "日向市", type: "city",
+              curr: { flu: 2, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 1, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 3, covid: 0, gastro: 1, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "串間市", type: "city",
+              curr: { flu: 1, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "西都市", type: "city",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 1, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 3, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "えびの市", type: "city",
+              curr: { flu: 1, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 1, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "三股町", type: "town",
+              curr: { flu: 14, covid: 0, gastro: 0, strep: 1, pox: 1, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 7, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 1 } },
+            
+            { name: "高原町", type: "town",
+              curr: { flu: 1, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+            
+            { name: "国富町", type: "town",
+              curr: { flu: 1, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "綾町", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 1, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "高鍋町", type: "town",
+              curr: { flu: 1, covid: 0, gastro: 1, strep: 0, pox: 1, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 4, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 1, eye: 1, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "新富町", type: "town",
+              curr: { flu: 2, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 2, covid: 1, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "西米良村", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 1, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "木城町", type: "town",
+              curr: { flu: 1, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "川南町", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 3, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "都農町", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 1, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "門川町", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "諸塚村", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "椎葉村", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "美郷町", type: "town",
+              curr: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 0, covid: 0, gastro: 0, strep: 0, pox: 0, myco: 0, eye: 0, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } },
+
+            { name: "県立学校", isOther: true,
+              curr: { flu: 20, covid: 0, gastro: 2, strep: 0, pox: 0, myco: 1, eye: 1, other: 1, cClass: 0, cGrade: 0, cSchool: 0 },
+              prev: { flu: 27, covid: 0, gastro: 2, strep: 0, pox: 0, myco: 0, eye: 1, other: 0, cClass: 0, cGrade: 0, cSchool: 0 } }
+        ];
+
+        const diseaseKeys = ['flu', 'covid', 'gastro', 'strep', 'pox', 'myco', 'eye', 'other'];
+
+        function highlightTakachiho() {
+            document.getElementById("regionFilter").value = "all";
+            document.getElementById("tableSearch").value = "";
+            filterData();
+            setTimeout(() => {
+                const targetRow = document.getElementById("row-takachiho");
+                if (targetRow) {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetRow.classList.add("ring-4", "ring-amber-300", "scale-[1.01]");
+                    setTimeout(() => targetRow.classList.remove("ring-4", "ring-amber-300", "scale-[1.01]"), 2200);
+                }
+            }, 100);
+        }
+
+        function formatValWithDiff(currVal, prevVal, isHighlight = false) {
+            const diff = currVal - prevVal;
+            let diffHtml = '';
+            if (diff > 0) {
+                diffHtml = `<span class="text-[11px] text-rose-600 font-bold font-num ml-0.5">↑${diff}</span>`;
+            } else if (diff < 0) {
+                diffHtml = `<span class="text-[11px] text-emerald-600 font-bold font-num ml-0.5">↓${Math.abs(diff)}</span>`;
+            }
+
+            const mainText = currVal > 0 
+                ? `<span class="text-base sm:text-lg font-black font-num ${isHighlight ? 'text-slate-900' : 'text-slate-800'}">${currVal}</span>` 
+                : `<span class="text-slate-300 font-medium font-num text-sm">0</span>`;
+
+            return `<div>${mainText}${diffHtml}</div><div class="text-[10px] text-slate-400 font-medium font-num">(${prevVal})</div>`;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById("regionalTableBody");
+            const notice = document.getElementById("noDataNotice");
+            tbody.innerHTML = "";
+
+            if (data.length === 0) {
+                notice.classList.remove("hidden");
+                return;
+            } else {
+                notice.classList.add("hidden");
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement("tr");
+
+                if (item.isFocus) {
+                    tr.id = "row-takachiho";
+                    tr.className = "bg-amber-100/90 font-bold border-b-2 border-amber-300 sticky top-12 z-10 shadow-2xs transition-all";
+                } else if (item.isTotal) {
+                    tr.className = "bg-emerald-100/70 font-bold border-b-2 border-emerald-300 sticky top-12 z-10";
+                } else if (item.isNeighbor) {
+                    tr.className = "hover:bg-amber-50/60 transition-colors border-b border-amber-100/60 bg-amber-50/20";
+                } else {
+                    tr.className = "hover:bg-emerald-50/30 transition-colors border-b border-amber-100/60";
+                }
+
+                const stickyBg = item.isFocus ? "bg-amber-100" : item.isTotal ? "bg-emerald-50" : "bg-white";
+
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-800 border-r border-amber-200/80 sticky left-0 ${stickyBg} shadow-2xs">
+                        <div class="text-xs sm:text-sm font-hand">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 font-normal">前週比 (10/15)</div>
+                    </td>
+                    <td class="p-2.5 text-center border-r border-amber-100 bg-rose-50/40">${formatValWithDiff(item.curr.flu, item.prev.flu, true)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100 bg-amber-50/40">${formatValWithDiff(item.curr.covid, item.prev.covid, true)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.gastro, item.prev.gastro)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.strep, item.prev.strep)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.pox, item.prev.pox)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.myco, item.prev.myco)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100 bg-teal-50/40">${formatValWithDiff(item.curr.eye, item.prev.eye, true)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.other, item.prev.other)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.cClass, item.prev.cClass)}</td>
+                    <td class="p-2.5 text-center border-r border-amber-100">${formatValWithDiff(item.curr.cGrade, item.prev.cGrade)}</td>
+                    <td class="p-2.5 text-center">${formatValWithDiff(item.curr.cSchool, item.prev.cSchool)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterData() {
+            const searchVal = document.getElementById("tableSearch").value.trim().toLowerCase();
+            const filterVal = document.getElementById("regionFilter").value;
+
+            let filtered = fullRegionalData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchVal);
+                if (!matchesSearch) return false;
+
+                const totalCases = diseaseKeys.reduce((sum, key) => sum + (parseInt(item.curr[key]) || 0), 0);
+
+                if (filterVal === "takachihoOnly") {
+                    return item.isFocus || item.isNeighbor || item.isTotal;
+                } else if (filterVal === "hasData") {
+                    return totalCases > 0 || item.isFocus;
+                } else if (filterVal === "city") {
+                    return item.type === "city" || item.isTotal;
+                } else if (filterVal === "town") {
+                    return item.type === "town";
+                }
+                return true;
+            });
+
+            renderTable(filtered);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            filterData();
+
+            document.getElementById("tableSearch").addEventListener("input", filterData);
+            document.getElementById("regionFilter").addEventListener("change", filterData);
+
+            // 疾患別 報告人数グラフ (10/22 vs 10/15 画像データ準拠)
+            const ctxDisease = document.getElementById('diseaseChart').getContext('2d');
+            new Chart(ctxDisease, {
+                type: 'bar',
+                data: {
+                    labels: ["インフルエンザ", "溶連菌感染症", "その他", "マイコプラズマ", "流行性角結膜炎", "感染性胃腸炎", "新型コロナ", "水ぼうそう"],
+                    datasets: [
+                        {
+                            label: '10月22日（最新）',
+                            data: [135, 9, 7, 6, 5, 5, 2, 1],
+                            backgroundColor: '#0284c7',
+                            borderRadius: 8
+                        },
+                        {
+                            label: '10月15日（前週）',
+                            data: [175, 12, 7, 9, 10, 7, 2, 4],
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true, 
+                            position: 'top',
+                            labels: { font: { family: "'Plus Jakarta Sans', 'Noto Sans JP', sans-serif", weight: 'bold', size: 12 } }
+                        },
+                        tooltip: { callbacks: { label: function(c) { return ` ${c.dataset.label}: ${c.raw} 名`; } } }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { 
+                                precision: 0,
+                                font: { family: "'Outfit', 'Plus Jakarta Sans', sans-serif", weight: 'bold', size: 12 }
+                            }, 
+                            grid: { color: '#f5efe6' } 
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 12, family: "'Noto Sans JP', sans-serif", weight: 'bold' },
+                                callback: function(value) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 5 ? label.substring(0, 4) + '…' : label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
